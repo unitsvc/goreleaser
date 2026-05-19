@@ -87,3 +87,38 @@ func setupGitea(ctx *context.Context) error {
 	ctx.ReleaseURL = url
 	return err
 }
+
+func setupGitee(ctx *context.Context) error {
+	if ctx.Config.Release.Gitee.Name == "" {
+		repo, err := getRepository(ctx)
+		if err != nil {
+			return err
+		}
+		ctx.Config.Release.Gitee = repo
+	}
+
+	if err := tmpl.New(ctx).ApplyAll(
+		&ctx.Config.Release.Gitee.Name,
+		&ctx.Config.Release.Gitee.Owner,
+	); err != nil {
+		return err
+	}
+
+	// Set default URLs
+	if ctx.Config.GiteeURLs.API == "" {
+		ctx.Config.GiteeURLs.API = "https://gitee.com/api/v5/"
+	}
+	if ctx.Config.GiteeURLs.Download == "" {
+		ctx.Config.GiteeURLs.Download = "https://gitee.com/"
+	}
+
+	url, err := tmpl.New(ctx).Apply(fmt.Sprintf(
+		"%s/%s/%s/releases/tag/%s",
+		ctx.Config.GiteeURLs.Download,
+		ctx.Config.Release.Gitee.Owner,
+		ctx.Config.Release.Gitee.Name,
+		ctx.Git.CurrentTag,
+	))
+	ctx.ReleaseURL = url
+	return err
+}
