@@ -78,7 +78,11 @@ func (c *giteeClient) createRelease(ctx *context.Context, title, body string) (*
 		log.WithError(err).Debug("error creating Gitee release")
 		return nil, err
 	}
-	log.WithField("id", *release.ID).Info("Gitee release created")
+	releaseID := 0
+	if release.ID != nil {
+		releaseID = *release.ID
+	}
+	log.WithField("id", releaseID).Info("Gitee release created")
 	return release, nil
 }
 
@@ -114,7 +118,11 @@ func (c *giteeClient) updateRelease(ctx *context.Context, title, body string, id
 		log.WithError(err).Debug("error updating Gitee release")
 		return nil, err
 	}
-	log.WithField("id", *release.ID).Info("Gitee release updated")
+	releaseID := 0
+	if release.ID != nil {
+		releaseID = *release.ID
+	}
+	log.WithField("id", releaseID).Info("Gitee release updated")
 	return release, nil
 }
 
@@ -137,8 +145,16 @@ func (c *giteeClient) CreateRelease(ctx *context.Context, body string) (string, 
 	}
 
 	if release != nil {
-		body = getReleaseNotes(*release.Body, body, ctx.Config.Release.ReleaseNotesMode)
-		release, err = c.updateRelease(ctx, title, body, int64(*release.ID))
+		existingBody := ""
+		if release.Body != nil {
+			existingBody = *release.Body
+		}
+		body = getReleaseNotes(existingBody, body, ctx.Config.Release.ReleaseNotesMode)
+		existingID := int64(0)
+		if release.ID != nil {
+			existingID = int64(*release.ID)
+		}
+		release, err = c.updateRelease(ctx, title, body, existingID)
 		if err != nil {
 			return "", err
 		}
@@ -149,7 +165,11 @@ func (c *giteeClient) CreateRelease(ctx *context.Context, body string) (string, 
 		}
 	}
 
-	return strconv.FormatInt(int64(*release.ID), 10), nil
+	finalID := int64(0)
+	if release.ID != nil {
+		finalID = int64(*release.ID)
+	}
+	return strconv.FormatInt(finalID, 10), nil
 }
 
 func (c *giteeClient) PublishRelease(_ *context.Context, _ string) error {
