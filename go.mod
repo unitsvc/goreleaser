@@ -101,6 +101,7 @@ require (
 	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
+	github.com/next-bin/go-gitee v0.0.0-20260519145349-1e256d10bfb3 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/onsi/gomega v1.39.1 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
