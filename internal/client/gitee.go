@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	gitee "github.com/next-bin/go-gitee/gitee"
 	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/v2/internal/artifact"
 	"github.com/goreleaser/goreleaser/v2/internal/changelog"
@@ -16,6 +15,7 @@ import (
 	"github.com/goreleaser/goreleaser/v2/internal/tmpl"
 	"github.com/goreleaser/goreleaser/v2/pkg/config"
 	"github.com/goreleaser/goreleaser/v2/pkg/context"
+	gitee "github.com/next-bin/go-gitee/gitee"
 )
 
 type giteeClient struct {
