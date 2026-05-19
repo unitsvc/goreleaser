@@ -1323,7 +1323,7 @@ type Project struct {
 	Retry             Retry             `yaml:"retry,omitempty" json:"retry,omitempty"`
 
 	// force the SCM token to use when multiple are set
-	ForceToken string `yaml:"force_token,omitempty" json:"force_token,omitempty" jsonschema:"enum=github,enum=gitlab,enum=gitea,enum=,default="`
+	ForceToken string `yaml:"force_token,omitempty" json:"force_token,omitempty" jsonschema:"enum=github,enum=gitlab,enum=gitea,enum=gitee,enum=,default="`
 
 	// should be set if using github enterprise
 	GitHubURLs GitHubURLs `yaml:"github_urls,omitempty" json:"github_urls,omitempty"`
