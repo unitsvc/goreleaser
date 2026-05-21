@@ -39,6 +39,7 @@ require (
 	github.com/modelcontextprotocol/registry v1.7.9
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0
+	github.com/next-bin/go-gitee v0.0.0-20260519145349-1e256d10bfb3
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/slack-go/slack v0.23.1
 	github.com/spf13/cobra v1.10.2
@@ -101,7 +102,6 @@ require (
 	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/next-bin/go-gitee v0.0.0-20260519145349-1e256d10bfb3 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/onsi/gomega v1.39.1 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
