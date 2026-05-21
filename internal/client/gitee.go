@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -47,9 +48,17 @@ func newGitee(ctx *context.Context, token string) (*giteeClient, error) {
 		apiURL = "https://gitee.com/api/v5/"
 	}
 
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{
+			//nolint:gosec
+			InsecureSkipVerify: ctx.Config.GiteeURLs.SkipTLSVerify,
+		},
+	}
 	opts := []gitee.ClientOptionsFunc{
 		gitee.WithToken(token),
 		gitee.WithBaseURL(apiURL),
+		gitee.WithHTTPClient(&http.Client{Transport: transport}),
 	}
 	client, err := gitee.NewClient(opts...)
 	if err != nil {
@@ -328,6 +337,7 @@ func (c *giteeClient) ReleaseURLTemplate(ctx *context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("templating Gitee download URL: %w", err)
 	}
+	downloadURL = strings.TrimSuffix(downloadURL, "/") + "/"
 
 	return fmt.Sprintf(
 		"%s%s/%s/releases/download/{{ urlPathEscape .Tag }}/{{ .ArtifactName }}",

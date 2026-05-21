@@ -2,6 +2,7 @@ package release
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/goreleaser/goreleaser/v2/internal/tmpl"
 	"github.com/goreleaser/goreleaser/v2/pkg/context"
@@ -112,9 +113,10 @@ func setupGitee(ctx *context.Context) error {
 		ctx.Config.GiteeURLs.Download = "https://gitee.com/"
 	}
 
+	downloadURL := strings.TrimSuffix(ctx.Config.GiteeURLs.Download, "/")
 	url, err := tmpl.New(ctx).Apply(fmt.Sprintf(
 		"%s/%s/%s/releases/tag/%s",
-		ctx.Config.GiteeURLs.Download,
+		downloadURL,
 		ctx.Config.Release.Gitee.Owner,
 		ctx.Config.Release.Gitee.Name,
 		ctx.Git.CurrentTag,
