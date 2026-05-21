@@ -58,7 +58,7 @@ universal_binaries:
 
 notarize:
   macos:
-    - enabled: false
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
       sign:
         certificate: "{{.Env.MACOS_SIGN_P12}}"
         password: "{{.Env.MACOS_SIGN_PASSWORD}}"
@@ -76,7 +76,7 @@ checksum:
 
 changelog:
   sort: asc
-  use: git
+  use: github
   format: '{{ .SHA }}: {{ .Message }}{{ if and (not .IsNightly) .Logins }} ({{ .Logins | listExclude "^@Copilot$" | englishJoin }}){{ end }}'
 
   filters:
@@ -117,10 +117,9 @@ changelog:
       order: 9999
 
 dockers_v2:
-  - disable: true
-    images:
-      - "unitsvc/goreleaser"
-      - "ghcr.io/unitsvc/goreleaser"
+  - images:
+      - "goreleaser/goreleaser"
+      - "ghcr.io/goreleaser/goreleaser"
     tags:
       - "v{{ .Version }}"
       - "{{ if .IsNightly }}nightly{{ end }}"
@@ -128,7 +127,7 @@ dockers_v2:
     extra_files:
       - scripts/entrypoint.sh
     labels:
-      "io.artifacthub.package.readme-url": "https://raw.githubusercontent.com/unitsvc/goreleaser/main/README.md"
+      "io.artifacthub.package.readme-url": "https://raw.githubusercontent.com/goreleaser/goreleaser/main/README.md"
       "io.artifacthub.package.logo-url": "https://goreleaser.com/favicon.svg"
       "io.artifacthub.package.maintainers": '[{"name":"Carlos Alexandro Becker","email":"carlos@carlosbecker.dev"}]'
       "io.artifacthub.package.license": "MIT"
@@ -180,8 +179,7 @@ archives:
           mtime: "{{ .CommitDate }}"
 
 homebrew_casks:
-  - disable: true
-    repository:
+  - repository:
       owner: goreleaser
       name: homebrew-tap
       token: "{{ .Env.GH_PAT }}"
@@ -197,11 +195,10 @@ homebrew_casks:
       zsh: "completions/goreleaser.zsh"
       fish: "completions/goreleaser.fish"
     url:
-      verified: github.com/unitsvc/goreleaser/releases/download
+      verified: github.com/goreleaser/goreleaser/releases/download
 
 nix:
-  - disable: true
-    name: goreleaser
+  - name: goreleaser
     repository:
       owner: goreleaser
       name: nur
@@ -215,8 +212,7 @@ nix:
       installShellCompletion ./completions/*
 
 winget:
-  - disable: true
-    name: goreleaser
+  - name: goreleaser
     publisher: goreleaser
     license: MIT
     homepage: https://goreleaser.com
@@ -234,8 +230,7 @@ winget:
           branch: master
 
 aurs:
-  - disable: true
-    homepage: https://goreleaser.com
+  - homepage: https://goreleaser.com
     description: Release engineering, simplified
     maintainers:
       - "Fernandez Ludovic <lfernandez dot dev at gmail dot com>"
@@ -262,8 +257,7 @@ aurs:
       install -Dm644 "./manpages/goreleaser.1.gz" "${pkgdir}/usr/share/man/man1/goreleaser.1.gz"
 
 scoops:
-  - disable: true
-    repository:
+  - repository:
       owner: goreleaser
       name: scoop-bucket
       token: "{{ .Env.GH_PAT }}"
@@ -273,10 +267,9 @@ scoops:
     license: MIT
 
 npms:
-  - disable: true
-    name: "@goreleaser/goreleaser"
-    repository: "git+https://github.com/unitsvc/goreleaser.git"
-    bugs: https://github.com/unitsvc/goreleaser/issues
+  - name: "@goreleaser/goreleaser"
+    repository: "git+https://github.com/goreleaser/goreleaser.git"
+    bugs: https://github.com/goreleaser/goreleaser/issues
     description: Release engineering, simplified
     homepage: https://goreleaser.com
     license: MIT
@@ -353,8 +346,7 @@ nfpms:
         - changelog-file-missing-in-native-package
 
 snapcrafts:
-  - disable: true
-    name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+  - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     summary: Release engineering, simplified
     description: |
       GoReleaser allows you to release easily build, package, publish, and
@@ -362,10 +354,10 @@ snapcrafts:
     grade: stable
     confinement: classic
     publish: true
+    disable: "{{ if .IsNightly }}true{{ end }}"
 
 flatpak:
-  - disable: true
-    app_id: com.goreleaser.GoReleaser
+  - app_id: com.goreleaser.GoReleaser
     runtime: org.freedesktop.Platform
     runtime_version: "24.08"
     sdk: org.freedesktop.Sdk
@@ -377,8 +369,7 @@ sboms:
   - artifacts: archive
 
 signs:
-  - disable: true
-    cmd: cosign
+  - cmd: cosign
     signature: "${artifact}.sigstore.json"
     output: '{{ not (isEnvSet "CI" )}}'
     artifacts: checksum
@@ -389,8 +380,7 @@ signs:
       - --yes
 
 docker_signs:
-  - disable: true
-    cmd: cosign
+  - cmd: cosign
     artifacts: manifests
     output: '{{ not (isEnvSet "CI" )}}'
     args:
@@ -399,41 +389,62 @@ docker_signs:
       - --yes
 
 gemfury:
-  - disable: true
-    account: goreleaser
+  - account: goreleaser
+    disable: "{{ .IsNightly }}"
 
 milestones:
-  - disable: true
-    close: true
+  - close: true
 
 nightly:
-  disable: true
   publish_release: true
   tag_name: "{{ incminor .Tag }}-{{ .ShortCommit }}-nightly"
   version_template: "{{ incminor .Version }}-{{ .ShortCommit }}-nightly"
 
-gitee_urls:
-  api: https://gitee.com/api/v5/
-  download: https://gitee.com/
-
 release:
-  gitee:
-    owner: next-bin
-    name: goreleaser
   name_template: "{{ .Tag }}"
   prerelease: auto
+  header: |
+    {{ if not .IsNightly }}
+    ## Announcement
+
+    Read the official announcement: [Announcing GoReleaser v{{.Major}}.{{.Minor}}](https://goreleaser.com/blog/goreleaser-v{{.Major}}.{{.Minor}}/).
+    {{ end }}
+
   footer: |
-    **Full Changelog**: {{ .ReleaseURL }}
+    **Full Changelog**: https://github.com/goreleaser/goreleaser/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    {{ if not .IsNightly }}
+    ## Helping out
+
+    This release is only possible thanks to **all** the support of some **awesome people**!
+
+    Want to be one of them?
+    You can [sponsor](https://goreleaser.com/sponsors/), get a [Pro License](https://goreleaser.com/pro) or [contribute with code](https://goreleaser.com/contributing).
+
+    ## Where to go next?
+
+    * Find examples and commented usage of all options in our [website](https://goreleaser.com/intro/).
+    * Reach out on [Discord](https://discord.gg/RGEBtg8vQ6), [Twitter](https://twitter.com/goreleaser), and [Telegram](https://t.me/goreleasernews)!
+
+    <a href="https://goreleaser.com"><img src="https://raw.githubusercontent.com/goreleaser/artwork/master/opencollective-header.png" with="100%" alt="GoReleaser logo"></a>
+    {{ end }}
 
 announce:
   mastodon:
-    enabled: false
+    enabled: true
+    message_template: "#GoReleaser {{ .Tag }} is out! Check it out: https://github.com/goreleaser/goreleaser/releases/tag/{{ .Tag }}"
+    server: https://fosstodon.org
 
   opencollective:
-    enabled: false
+    enabled: true
+    slug: goreleaser
 
   discord:
-    enabled: false
+    enabled: true
+    message_template: "GoReleaser {{ .Tag }} is out! Check it out: https://github.com/goreleaser/goreleaser/releases/tag/{{ .Tag }}"
 
   telegram:
-    enabled: false
+    enabled: true
+    chat_id: "@goreleasernews"
+    parse_mode: HTML
+    message_template: 'The all new <a href="{{.ReleaseURL}}">GoReleaser <code>{{.Tag}}</code></a> is out!'
