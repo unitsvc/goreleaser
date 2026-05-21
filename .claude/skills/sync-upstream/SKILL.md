@@ -1,16 +1,29 @@
 ---
 name: sync-upstream
-description: Use when syncing from upstream goreleaser/goreleaser to the GitHub development repo. Triggers on "sync upstream", "update from upstream", "pull upstream".
+description: Use when syncing from upstream goreleaser/goreleaser to the GitHub development repo. Triggers on "sync upstream", "update from upstream", "pull upstream". Automatically resolves conflicts and merges the PR.
 ---
 
 # Sync Upstream
 
-Sync the upstream `goreleaser/goreleaser` repository to the GitHub development repo (`next-bin/goreleaser`) via a `sync/upstream` branch and PR.
+Sync the upstream `goreleaser/goreleaser` repository to the GitHub development repo (`next-bin/goreleaser`) via a `sync/upstream` branch and PR. Automatically resolves merge conflicts and merges the PR.
 
 ## Prerequisites
 
 - `gh` CLI installed and authenticated
 - Git repository with `origin` pointing to `next-bin/goreleaser`
+
+## Known Fork Files
+
+The following paths are fork-specific and must be preserved from `main` (not overwritten by upstream) during conflict resolution:
+
+```
+.claude/
+.goreleaser-sync.yaml
+scripts/determine-version.sh
+.env
+build/
+docs/superpowers/
+```
 
 ## Flow
 
@@ -81,7 +94,8 @@ git push origin sync/upstream --force-with-lease
 gh pr list --head sync/upstream --state open --json number,url
 ```
 
-- If an open PR already exists, print the PR URL and tell the user: "An open PR already exists: <url>. Please review and merge it." and STOP.
+- If an open PR already exists, note its number and URL. Skip to step 10 (conflict detection).
+- If no open PR, continue to step 9.
 
 ### 9. Create PR
 
@@ -109,7 +123,9 @@ Then create the PR:
 gh pr create --base main --head sync/upstream --title "$TITLE" --body "$BODY"
 ```
 
-### 10. Conflict Detection
+Note the PR number from the output.
+
+### 10. Conflict Detection & Auto-Resolution
 
 Poll GitHub for merge status (up to 3 times, 10s intervals):
 
@@ -117,17 +133,74 @@ Poll GitHub for merge status (up to 3 times, 10s intervals):
 gh pr view <PR_NUMBER> --json mergeable
 ```
 
-- If `MERGEABLE` → no conflicts. Print PR URL.
-- If `CONFLICTING` → warn the user: "The PR has merge conflicts with main. Would you like me to resolve them locally?" If yes:
-  ```bash
-  git checkout sync/upstream
-  git merge main
-  # resolve conflicts, then:
-  git push origin sync/upstream --force-with-lease
-  git checkout main
-  ```
-- If still `UNKNOWN` after 3 polls → warn: "Could not determine merge status. Check the PR on GitHub."
+- If `MERGEABLE` → no conflicts. Proceed to step 11 (auto-merge).
+- If `CONFLICTING` → auto-resolve conflicts locally (see below).
+- If still `UNKNOWN` after 3 polls → warn: "Could not determine merge status. Attempting local merge check."
 
-### 11. Output
+#### Auto-Resolve Conflicts
 
-Print the PR URL and tell the user to review and merge.
+When conflicts are detected, resolve them automatically:
+
+```bash
+git checkout sync/upstream
+git merge main --no-edit
+```
+
+If merge fails with conflicts:
+
+1. List all conflicted files:
+
+```bash
+CONFLICTS=$(git diff --name-only --diff-filter=U)
+```
+
+2. For each conflicted file, apply resolution strategy:
+   - **If the file is a known fork file** (path starts with `.claude/`, `.goreleaser-sync.yaml`, `scripts/determine-version.sh`, `docs/superpowers/`): keep `main`'s version:
+     ```bash
+     git checkout --theirs <file>
+     git add <file>
+     ```
+   - **For all other files**: keep upstream's version (`sync/upstream`):
+     ```bash
+     git checkout --ours <file>
+     git add <file>
+     ```
+
+3. After all conflicts are resolved, commit and push:
+
+```bash
+git commit --no-edit
+git push origin sync/upstream --force-with-lease
+```
+
+4. Switch back to main:
+
+```bash
+git checkout main
+```
+
+5. Re-poll GitHub merge status (up to 5 times, 10s intervals). Once `MERGEABLE`, proceed to step 11. If still `UNKNOWN` after 5 polls, proceed anyway — `gh pr merge` will fail safely if not ready.
+
+### 11. Auto-Merge PR
+
+Merge the PR using GitHub's merge (not squash, to preserve upstream commit history):
+
+```bash
+gh pr merge <PR_NUMBER> --merge --delete-branch=false
+```
+
+Do NOT delete the `sync/upstream` branch — it is reused for future syncs.
+
+### 12. Update Local Main
+
+```bash
+git checkout main
+git pull origin main
+```
+
+### 13. Output
+
+Print:
+- The merged PR URL
+- Latest commit on main: `git log --oneline -1 main`
+- "Sync complete. Local main is now up to date with upstream."
