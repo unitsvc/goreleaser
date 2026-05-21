@@ -19,8 +19,8 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 )
 
-// ErrMissingToken indicates an error when GITHUB_TOKEN, GITLAB_TOKEN and GITEA_TOKEN are all missing in the environment.
-var ErrMissingToken = errors.New("missing GITHUB_TOKEN, GITLAB_TOKEN and GITEA_TOKEN")
+// ErrMissingToken indicates an error when GITHUB_TOKEN, GITLAB_TOKEN, GITEA_TOKEN and GITEE_TOKEN are all missing in the environment.
+var ErrMissingToken = errors.New("missing GITHUB_TOKEN, GITLAB_TOKEN, GITEA_TOKEN and GITEE_TOKEN")
 
 // ErrMultipleTokens indicates that multiple tokens are defined. ATM only one of them if allowed.
 // See https://github.com/goreleaser/goreleaser/pull/809
@@ -50,6 +50,9 @@ func setDefaultTokenFiles(ctx *context.Context) {
 	if env.GiteaToken == "" {
 		env.GiteaToken = "~/.config/goreleaser/gitea_token"
 	}
+	if env.GiteeToken == "" {
+		env.GiteeToken = "~/.config/goreleaser/gitee_token"
+	}
 }
 
 // Run the pipe.
@@ -69,6 +72,7 @@ func (Pipe) Run(ctx *context.Context) error {
 	githubToken, githubTokenErr := loadEnv("GITHUB_TOKEN", ctx.Config.EnvFiles.GitHubToken)
 	gitlabToken, gitlabTokenErr := loadEnv("GITLAB_TOKEN", ctx.Config.EnvFiles.GitLabToken)
 	giteaToken, giteaTokenErr := loadEnv("GITEA_TOKEN", ctx.Config.EnvFiles.GiteaToken)
+	giteeToken, giteeTokenErr := loadEnv("GITEE_TOKEN", ctx.Config.EnvFiles.GiteeToken)
 
 	forceToken := ctx.Config.ForceToken
 	if forceToken == "" {
@@ -78,12 +82,19 @@ func (Pipe) Run(ctx *context.Context) error {
 	case "github":
 		gitlabToken = ""
 		giteaToken = ""
+		giteeToken = ""
 	case "gitlab":
 		githubToken = ""
 		giteaToken = ""
+		giteeToken = ""
 	case "gitea":
 		githubToken = ""
 		gitlabToken = ""
+		giteeToken = ""
+	case "gitee":
+		githubToken = ""
+		gitlabToken = ""
+		giteaToken = ""
 	default:
 		var tokens []string
 		if githubToken != "" {
@@ -95,15 +106,18 @@ func (Pipe) Run(ctx *context.Context) error {
 		if giteaToken != "" {
 			tokens = append(tokens, "GITEA_TOKEN")
 		}
+		if giteeToken != "" {
+			tokens = append(tokens, "GITEE_TOKEN")
+		}
 		if len(tokens) > 1 {
 			return ErrMultipleTokens{tokens}
 		}
 	}
 
-	noTokens := githubToken == "" && gitlabToken == "" && giteaToken == ""
-	noTokenErrs := githubTokenErr == nil && gitlabTokenErr == nil && giteaTokenErr == nil
+	noTokens := githubToken == "" && gitlabToken == "" && giteaToken == "" && giteeToken == ""
+	noTokenErrs := githubTokenErr == nil && gitlabTokenErr == nil && giteaTokenErr == nil && giteeTokenErr == nil
 
-	if err := checkErrors(ctx, noTokens, noTokenErrs, gitlabTokenErr, githubTokenErr, giteaTokenErr); err != nil {
+	if err := checkErrors(ctx, noTokens, noTokenErrs, gitlabTokenErr, githubTokenErr, giteaTokenErr, giteeTokenErr); err != nil {
 		return err
 	}
 
@@ -119,6 +133,12 @@ func (Pipe) Run(ctx *context.Context) error {
 		ctx.Token = giteaToken
 	}
 
+	if giteeToken != "" {
+		log.Debug("token type: gitee")
+		ctx.TokenType = context.TokenTypeGitee
+		ctx.Token = giteeToken
+	}
+
 	if githubToken != "" {
 		log.Debug("token type: github")
 		ctx.Token = githubToken
@@ -131,7 +151,7 @@ func (Pipe) Run(ctx *context.Context) error {
 	return nil
 }
 
-func checkErrors(ctx *context.Context, noTokens, noTokenErrs bool, gitlabTokenErr, githubTokenErr, giteaTokenErr error) error {
+func checkErrors(ctx *context.Context, noTokens, noTokenErrs bool, gitlabTokenErr, githubTokenErr, giteaTokenErr, giteeTokenErr error) error {
 	if ctx.SkipTokenCheck || skips.Any(ctx, skips.Publish) {
 		return nil
 	}
@@ -153,6 +173,10 @@ func checkErrors(ctx *context.Context, noTokens, noTokenErrs bool, gitlabTokenEr
 
 	if giteaTokenErr != nil {
 		return fmt.Errorf("failed to load gitea token: %w", giteaTokenErr)
+	}
+
+	if giteeTokenErr != nil {
+		return fmt.Errorf("failed to load gitee token: %w", giteeTokenErr)
 	}
 	return nil
 }

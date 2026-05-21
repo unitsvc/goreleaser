@@ -15,7 +15,7 @@ import (
 
 func TestMain(m *testing.M) {
 	restores := map[string]string{}
-	for _, key := range []string{"GITHUB_TOKEN", "GITEA_TOKEN", "GITLAB_TOKEN"} {
+	for _, key := range []string{"GITHUB_TOKEN", "GITEA_TOKEN", "GITLAB_TOKEN", "GITEE_TOKEN"} {
 		prevValue, ok := os.LookupEnv(key)
 		if ok {
 			_ = os.Unsetenv(key)
@@ -41,6 +41,7 @@ func TestSetDefaultTokenFiles(t *testing.T) {
 		require.Equal(t, "~/.config/goreleaser/github_token", ctx.Config.EnvFiles.GitHubToken)
 		require.Equal(t, "~/.config/goreleaser/gitlab_token", ctx.Config.EnvFiles.GitLabToken)
 		require.Equal(t, "~/.config/goreleaser/gitea_token", ctx.Config.EnvFiles.GiteaToken)
+		require.Equal(t, "~/.config/goreleaser/gitee_token", ctx.Config.EnvFiles.GiteeToken)
 	})
 	t.Run("custom config config", func(t *testing.T) {
 		cfg := "what"

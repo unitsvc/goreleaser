@@ -142,6 +142,8 @@ func newWithToken(ctx *context.Context, token string) (Client, error) {
 		return newGitLab(ctx, token)
 	case context.TokenTypeGitea:
 		return newGitea(ctx, token)
+	case context.TokenTypeGitee:
+		return newGitee(ctx, token)
 	default:
 		return nil, fmt.Errorf("invalid client token type: %q", ctx.TokenType)
 	}

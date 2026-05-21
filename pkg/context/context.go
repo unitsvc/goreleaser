@@ -66,6 +66,8 @@ const (
 	TokenTypeGitLab TokenType = "gitlab"
 	// TokenTypeGitea defines gitea as type of the token.
 	TokenTypeGitea TokenType = "gitea"
+	// TokenTypeGitee defines gitee as type of the token.
+	TokenTypeGitee TokenType = "gitee"
 )
 
 type Action uint8

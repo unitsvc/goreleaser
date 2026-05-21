@@ -46,6 +46,9 @@ func (p Pipe) Default(ctx *context.Context) error {
 	if ctx.Config.Release.Gitea.String() != "" {
 		numOfReleases++
 	}
+	if ctx.Config.Release.Gitee.String() != "" {
+		numOfReleases++
+	}
 	if numOfReleases > 1 {
 		return ErrMultipleReleases
 	}
@@ -61,6 +64,10 @@ func (p Pipe) Default(ctx *context.Context) error {
 		}
 	case context.TokenTypeGitea:
 		if err := setupGitea(ctx); err != nil {
+			return err
+		}
+	case context.TokenTypeGitee:
+		if err := setupGitee(ctx); err != nil {
 			return err
 		}
 	default:
@@ -118,6 +125,8 @@ func releaseRepo(ctx *context.Context) config.Repo {
 		return ctx.Config.Release.GitLab
 	case context.TokenTypeGitea:
 		return ctx.Config.Release.Gitea
+	case context.TokenTypeGitee:
+		return ctx.Config.Release.Gitee
 	default:
 		return ctx.Config.Release.GitHub
 	}
