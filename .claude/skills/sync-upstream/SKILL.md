@@ -67,20 +67,20 @@ git checkout main
 git pull origin main
 ```
 
-### 5. Create/Update sync/upstream Branch
+### 5. Check for New Commits
 
 ```bash
-git branch -f sync/upstream upstream/main
-```
-
-### 6. Check for New Commits
-
-```bash
-git log --oneline main..sync/upstream
+git log --oneline main..upstream/main
 ```
 
 - If output is empty, print "Already up to date. No new commits from upstream." and STOP.
 - If output is non-empty, continue.
+
+### 6. Create/Update sync/upstream Branch
+
+```bash
+git branch -f sync/upstream upstream/main
+```
 
 ### 7. Push to GitHub
 
